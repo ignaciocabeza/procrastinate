@@ -167,6 +167,12 @@ def close_connection(procrastinate_app: procrastinate.App, *args, **kwargs):
     default=True,
     help="Whether to actively listen for new jobs or periodically poll",
 )
+@click.option(
+    "-s",
+    "--run-stalled-jobs/--no-run-stalled-jobs",
+    default=False,
+    help="Whether to run jobs that are stalled in the queue at startup",
+)
 @handle_errors()
 def worker_(app: procrastinate.App, queues: str, **kwargs):
     """

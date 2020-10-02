@@ -24,6 +24,7 @@ class Worker:
         wait: bool = True,
         timeout: float = WORKER_TIMEOUT,
         listen_notify: bool = True,
+        run_stalled_jobs: bool = False,
     ):
         self.app = app
         self.queues = queues
@@ -33,6 +34,7 @@ class Worker:
         self.timeout = timeout
         self.wait = wait
         self.listen_notify = listen_notify
+        self.run_stalled_jobs = run_stalled_jobs
 
         # Handling the info about the currently running task.
         self.known_missing_tasks: Set[str] = set()
@@ -95,6 +97,10 @@ class Worker:
                 action="start_worker", queues=self.queues
             ),
         )
+
+        if self.run_stalled_jobs:
+            for stalled_job in await self.job_store.get_stalled_jobs(nb_seconds=0):
+                await self.job_store.finish_job(stalled_job, status=jobs.Status.TODO)
 
         with contextlib.ExitStack() as stack:
             if self.wait and self.listen_notify:
