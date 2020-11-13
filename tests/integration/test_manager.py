@@ -336,7 +336,7 @@ async def fixture_jobs(pg_job_manager, job_factory):
         task_name="task_foo",
         task_kwargs={"key": "a"},
     )
-    j1 = j1.evolve(id=await pg_job_manager.defer_job_async(j1))
+    j1 = j1.evolve(id=await pg_job_manager.defer_job_async(job=j1))
 
     j2 = job_factory(
         queue="q1",
@@ -345,8 +345,8 @@ async def fixture_jobs(pg_job_manager, job_factory):
         task_name="task_bar",
         task_kwargs={"key": "b"},
     )
-    j2 = attr.evolve(j2, id=await pg_job_manager.defer_job_async(j2))
-    await pg_job_manager.finish_job(j2, jobs.Status.FAILED)
+    j2 = j2.evolve(id=await pg_job_manager.defer_job_async(job=j2))
+    await pg_job_manager.finish_job(job=j2, status=jobs.Status.FAILED)
 
     j3 = job_factory(
         queue="q2",
@@ -355,15 +355,15 @@ async def fixture_jobs(pg_job_manager, job_factory):
         task_name="task_foo",
         task_kwargs={"key": "c"},
     )
-    j3 = attr.evolve(j3, id=await pg_job_manager.defer_job_async(j3))
-    await pg_job_manager.finish_job(j3, jobs.Status.SUCCEEDED)
+    j3 = j3.evolve(id=await pg_job_manager.defer_job_async(job=j3))
+    await pg_job_manager.finish_job(job=j3, status=jobs.Status.SUCCEEDED)
 
     return [j1, j2, j3]
 
 
-async def test_list_jobs_dict(fixture_jobs, admin, pg_job_manager):
+async def test_list_jobs_dict(fixture_jobs, pg_job_manager):
     j1, *_ = fixture_jobs
-    assert (await admin.list_jobs_async())[0] == {
+    assert (await pg_job_manager.list_jobs_async())[0] == {
         "id": j1.id,
         "status": "todo",
         "queue": j1.queue,
@@ -387,12 +387,12 @@ async def test_list_jobs_dict(fixture_jobs, admin, pg_job_manager):
         ({"queueing_lock": "queueing_lock2"}, [2]),
     ],
 )
-async def test_list_jobs(fixture_jobs, admin, kwargs, expected):
-    assert [e["id"] for e in await admin.list_jobs_async(**kwargs)] == expected
+async def test_list_jobs(fixture_jobs, kwargs, expected, pg_job_manager):
+    assert [e["id"] for e in await pg_job_manager.list_jobs_async(**kwargs)] == expected
 
 
-async def test_list_queues_dict(fixture_jobs, admin):
-    assert (await admin.list_queues_async())[0] == {
+async def test_list_queues_dict(fixture_jobs, pg_job_manager):
+    assert (await pg_job_manager.list_queues_async())[0] == {
         "name": "q1",
         "jobs_count": 2,
         "todo": 1,
@@ -412,12 +412,14 @@ async def test_list_queues_dict(fixture_jobs, admin):
         ({"lock": "lock2"}, ["q1"]),
     ],
 )
-async def test_list_queues(fixture_jobs, admin, kwargs, expected):
-    assert [e["name"] for e in await admin.list_queues_async(**kwargs)] == expected
+async def test_list_queues(fixture_jobs, kwargs, expected, pg_job_manager):
+    assert [
+        e["name"] for e in await pg_job_manager.list_queues_async(**kwargs)
+    ] == expected
 
 
-async def test_list_tasks_dict(fixture_jobs, admin):
-    assert (await admin.list_tasks_async())[0] == {
+async def test_list_tasks_dict(fixture_jobs, pg_job_manager):
+    assert (await pg_job_manager.list_tasks_async())[0] == {
         "name": "task_bar",
         "jobs_count": 1,
         "todo": 0,
@@ -437,12 +439,14 @@ async def test_list_tasks_dict(fixture_jobs, admin):
         ({"lock": "lock2"}, ["task_bar"]),
     ],
 )
-async def test_list_tasks(fixture_jobs, admin, kwargs, expected):
-    assert [e["name"] for e in await admin.list_tasks_async(**kwargs)] == expected
+async def test_list_tasks(fixture_jobs, pg_job_manager, kwargs, expected):
+    assert [
+        e["name"] for e in await pg_job_manager.list_tasks_async(**kwargs)
+    ] == expected
 
 
 @pytest.mark.parametrize("status", ["doing", "succeeded", "failed"])
-async def test_set_job_status(fixture_jobs, admin, status):
-    await admin.set_job_status_async(1, status)
-    (job1,) = await admin.list_jobs_async(id=1)
+async def test_set_job_status(fixture_jobs, pg_job_manager, status):
+    await pg_job_manager.set_job_status_async(1, status)
+    (job1,) = await pg_job_manager.list_jobs_async(id=1)
     assert job1["status"] == status

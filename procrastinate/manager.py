@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import Any, Dict, Iterable, Optional
 
-from procrastinate import connector, exceptions, jobs, sql
+from procrastinate import connector, exceptions, jobs, sql, utils
 
 logger = logging.getLogger(__name__)
 
@@ -437,3 +437,9 @@ class JobManager:
         )
         (result,) = await self.list_jobs_async(id=id)
         return result
+
+
+utils.add_method_sync_api(cls=JobManager, method_name="list_jobs_async")
+utils.add_method_sync_api(cls=JobManager, method_name="list_queues_async")
+utils.add_method_sync_api(cls=JobManager, method_name="list_tasks_async")
+utils.add_method_sync_api(cls=JobManager, method_name="set_job_status_async")

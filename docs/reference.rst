@@ -62,10 +62,18 @@ Exceptions
     :members: ProcrastinateException, LoadFromPathError,
               ConnectorException, AlreadyEnqueued, AppNotOpen
 
+Job statuses
+------------
+
+.. autoclass:: procrastinate.jobs.Status
+    :members:
+
+
 Accessing the jobs in the Database
 ----------------------------------
 
 .. autoclass:: procrastinate.manager.JobManager
+    :members:
 
 Django
 ------
