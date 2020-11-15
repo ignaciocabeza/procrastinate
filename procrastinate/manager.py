@@ -409,7 +409,7 @@ class JobManager:
             for row in await self.connector.execute_query_all_async(
                 query=sql.queries["list_tasks"],
                 queue_name=queue,
-                name=task,
+                task_name=task,
                 status=status,
                 lock=lock,
             )

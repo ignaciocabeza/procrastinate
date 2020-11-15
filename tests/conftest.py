@@ -160,6 +160,11 @@ def job_manager(app):
 
 
 @pytest.fixture
+def serial():
+    return itertools.count(1)
+
+
+@pytest.fixture
 def random_str():
     def _(length=8):
         return "".join(random.choice(string.ascii_lowercase) for _ in range(length))
@@ -181,16 +186,6 @@ def job_factory(serial, random_str):
         final_kwargs = defaults.copy()
         final_kwargs.update(kwargs)
         return jobs.Job(**final_kwargs)
-
-    return factory
-
-
-@pytest.fixture
-def deferred_job_factory(job_manager, job_factory):
-    async def factory(*, manager=job_manager, **kwargs):
-        job = job_factory(**kwargs)
-        job_id = await manager.defer_job_async(job)
-        return job.evolve(id=job_id)
 
     return factory
 
